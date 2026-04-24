@@ -1,0 +1,8 @@
+node_modules/
+client/node_modules/
+client/dist/
+uploads/selfies/*
+!uploads/selfies/.gitkeep
+data.db
+*.db-shm
+*.db-wal
