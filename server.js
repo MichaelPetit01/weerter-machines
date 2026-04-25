@@ -9,6 +9,22 @@ const db = require('./db');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+// CORS for cross-origin deployments
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const allowed = process.env.ALLOWED_ORIGIN || origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', allowed);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 // Ensure uploads dir exists
 const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads', 'selfies');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -18,7 +34,12 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'weerter-machines-geheim-2026',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 7 * 24 * 60 * 60 * 1000, httpOnly: true },
+  cookie: {
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+  },
 }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

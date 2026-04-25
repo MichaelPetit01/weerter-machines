@@ -6,7 +6,8 @@ async function req(method, path, body, isForm = false) {
   } else if (body && isForm) {
     opts.body = body;
   }
-  const res = await fetch('/api' + path, opts);
+  const base = import.meta.env.VITE_API_URL || '';
+  const res = await fetch(base + '/api' + path, opts);
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Er ging iets mis' }));
     throw new Error(err.error || 'Er ging iets mis');
