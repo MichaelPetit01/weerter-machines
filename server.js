@@ -11,6 +11,55 @@ const PORT = process.env.PORT || 3001;
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Auto-seed on first run if no users exist
+(function autoSeed() {
+  const count = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
+  if (count > 0) return;
+  console.log('Geen gebruikers gevonden, database wordt gevuld...');
+  const hash = (pw) => bcrypt.hashSync(pw, 10);
+  const ins = db.prepare('INSERT INTO users (username, display_name, password_hash) VALUES (?, ?, ?)');
+  const michael = ins.run('Michael', 'Michael', hash('Michael-Supermachine-2026'));
+  const lars = ins.run('Lars', 'Lars', hash('Lars-Supermachine-2026'));
+  const mId = michael.lastInsertRowid, lId = lars.lastInsertRowid;
+
+  const iT = db.prepare('INSERT INTO trainings (date, title, description, sport_type, is_extra, created_by) VALUES (?, ?, ?, ?, 0, ?)');
+  const iB = db.prepare('INSERT INTO training_blocks (training_id, order_index, distance_value, distance_unit, duration_minutes) VALUES (?, ?, ?, ?, ?)');
+  const schema = [
+    ['2026-04-28','Rustige duurloop','Begin rustig. Voel hoe je benen lopen en bouw voorzichtig op.','hardlopen',[[5,'km',28]]],
+    ['2026-04-30','Techniek & uithouding','Focus op je slagtechniek. Rustig tempo, maar efficiënt bewegen.','zwemmen',[[750,'m',18]]],
+    ['2026-05-02','Rustige uitrijrit','Eerste fietsrit van het schema. Gewoon lekker rijden, geen stress.','fietsen',[[25,'km',55]]],
+    ['2026-05-05','Tempoduurloop 7km','Iets meer gas. Stevig tempo aanhouden gedurende de hele loop.','hardlopen',[[7,'km',38]]],
+    ['2026-05-07','Duurzwemmen 1000m','Rustig doorzwemmen. Focus op ademhaling en regelmaat.','zwemmen',[[1000,'m',22]]],
+    ['2026-05-09','Langere fietsrit 35km','Langere rit op rustig tempo. Voel je benen werken.','fietsen',[[35,'km',72]]],
+    ['2026-05-12','Intervallen 4x800m','Vier keer 800 meter op goed tempo met 2 min rust ertussen.','hardlopen',[[1,'km',7],[3.2,'km',14],[1,'km',7]]],
+    ['2026-05-14','Race pace zwemmen 750m','Zwem op wedstrijdtempo. Snel maar haalbaar.','zwemmen',[[750,'m',16]]],
+    ['2026-05-15','Krachttempo fietsen 25km','Stevig tempo, een tandje meer dan normaal. Push jezelf.','fietsen',[[25,'km',50]]],
+    ['2026-05-17','Lange duurloop 8km','Langste looptraining tot nu toe. Rustig maar doorbijten.','hardlopen',[[8,'km',47]]],
+    ['2026-05-20','Snelheidstraining 8x100m','Acht keer 100 meter met 30 seconden rust. Ga hard!','zwemmen',[[800,'m',16]]],
+    ['2026-05-22','Brick: Fietsen 20km','Fiets stevig 20km. Daarna direct overstappen op hardlopen.','fietsen',[[20,'km',40]]],
+    ['2026-05-22','Brick: Doorlopen 3km','Direct na de fiets. Je benen voelen als klei — dat is normaal.','hardlopen',[[3,'km',18]]],
+    ['2026-05-24','Tempoduurloop 6km','Steeds een beetje harder worden door de loop heen.','hardlopen',[[6,'km',30]]],
+    ['2026-05-26','Intervallen 5x1km','Vijf keer 1 kilometer op stevig tempo. 2 min rust ertussen.','hardlopen',[[1,'km',7],[5,'km',25],[1,'km',6]]],
+    ['2026-05-28','Open water simulatie 1000m','Zwem alsof je in open water bent. Geen aanraking aan de baan.','zwemmen',[[1000,'m',20]]],
+    ['2026-05-30','Langste fietsrit 40km','De grote rit. Rustig maar dóórgaan. Eet en drink goed onderweg.','fietsen',[[40,'km',82]]],
+    ['2026-06-02','Laatste serieuze loop 5km','Laatste stevige looptraining. Voelt lekker want je bent fit.','hardlopen',[[5,'km',26]]],
+    ['2026-06-04','Race pace afsluiter 750m','Precies race distance, precies race tempo. Voel dat je er klaar voor bent.','zwemmen',[[750,'m',15]]],
+    ['2026-06-06','Uitrijden en ontspannen','Geen stress, geen tempo. Benen losmaken en genieten.','fietsen',[[15,'km',32]]],
+    ['2026-06-09','Losse benen activatie','Kort en fris. Niet te zwaar. Gewoon even bewegen.','hardlopen',[[3,'km',15]]],
+    ['2026-06-11','Kort & fris zwemmen','Even door het water. Niets meer dan dat.','zwemmen',[[400,'m',9]]],
+  ];
+  schema.forEach(([date, title, desc, sport, blocks]) => {
+    const tid = iT.run(date, title, desc, sport, mId).lastInsertRowid;
+    blocks.forEach(([d, u, dur], i) => iB.run(tid, i, d, u, dur));
+  });
+  const iM = db.prepare('INSERT INTO messages (sender_user_id, body, created_at) VALUES (?, ?, ?)');
+  iM.run(mId, 'Het schema staat klaar. Laten we dit doen 💪', '2026-04-24 09:00:00');
+  iM.run(lId, '13 juni wordt ons moment. Geen excuses.', '2026-04-24 09:05:00');
+  iM.run(mId, 'Eerste training maandag. Tot dan: rust en eten.', '2026-04-24 09:10:00');
+  iM.run(lId, 'Ik ben klaar. De Weerter Machines gaan draaien 🔥', '2026-04-24 09:15:00');
+  console.log('✅ Database gevuld met 2 gebruikers en 22 trainingen.');
+})();
+
 // CORS for cross-origin deployments
 app.use((req, res, next) => {
   const origin = req.headers.origin;
