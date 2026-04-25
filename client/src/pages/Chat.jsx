@@ -15,6 +15,7 @@ export default function Chat({ user }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
   const bottomRef = useRef();
   const lastIdRef = useRef(null);
   const inputRef = useRef();
@@ -60,8 +61,10 @@ export default function Chat({ user }) {
       const msg = await api.messages.send(body);
       lastIdRef.current = msg.id;
       setMessages(prev => [...prev, msg]);
-    } catch {
-      setText(body); // restore on error
+      setError('');
+    } catch (err) {
+      setText(body);
+      setError(err.message || 'Versturen mislukt');
     }
     setSending(false);
     inputRef.current?.focus();
@@ -137,6 +140,11 @@ export default function Chat({ user }) {
       </div>
 
       {/* Input */}
+      {error && (
+        <div className="fixed bottom-32 left-4 right-4 bg-red-900 text-red-200 text-sm px-4 py-2 rounded-xl z-40 text-center">
+          {error}
+        </div>
+      )}
       <form
         onSubmit={send}
         className="fixed bottom-16 left-0 right-0 bg-slate-900 border-t border-slate-800 px-4 py-3 z-30"
