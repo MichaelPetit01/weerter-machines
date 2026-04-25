@@ -147,6 +147,8 @@ export default function Chat({ user }) {
             type="text"
             value={text}
             onChange={e => setText(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(e); } }}
+            enterKeyHint="send"
             placeholder="Schrijf iets..."
             className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 outline-none focus:border-orange-500 transition-colors"
           />
